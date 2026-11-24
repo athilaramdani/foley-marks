@@ -8,12 +8,12 @@ class TrackModel:
         self.name = name
         self.media_type = media_type  # 'video' or 'audio'
         self.extra = {}
-        
+
         # Track states
         self.is_locked = False
         self.is_visible = True
         self.is_muted = False
-        
+
         self.clips: List[ClipModel] = []
 
     def add_clip(self, clip: ClipModel):
@@ -54,8 +54,8 @@ class TrackModel:
         track.is_muted = data.get("is_muted", False)
         known = {"track_id", "name", "media_type", "is_locked", "is_visible", "is_muted", "clips"}
         track.extra = copy.deepcopy({k: v for k, v in data.items() if k not in known})
-        
+
         for clip_data in data.get("clips", []):
             track.add_clip(ClipModel.from_dict(clip_data))
-            
+
         return track

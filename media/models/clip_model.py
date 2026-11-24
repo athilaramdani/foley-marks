@@ -12,7 +12,7 @@ class ClipModel:
         self.category = category
         self.source_offset = source_offset
         self.extra = {}
-        
+
         # UI States
         self.is_selected = False
         self.is_hovered = False

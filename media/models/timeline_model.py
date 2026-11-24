@@ -18,7 +18,7 @@ class TimelineModel:
         self.corrections = []
         self.analysis_settings = {}
         self.render_dirty = False
-        
+
         # Ordered list of Track Models
         # Always starts with one video track and at least one audio track
         self.tracks: List[TrackModel] = [

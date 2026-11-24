@@ -10,6 +10,8 @@ On 24 November 2026, the legacy Windows application passed its startup check and
 - Edge browser integration with mocked Tauri IPC passed import, playback, synchronized clip playback, split, undo/redo, save, reload and settings. One sampled playback offset was 28 ms.
 - Rust formatting, release-profile Clippy and all eight native unit tests passed.
 - The embedded Python runtime passed all six media tests with the production FFmpeg build. The render test checks both sides of a trimmed cue against the expected times within 25 ms.
+- A separate moving-object fixture produced six optical-flow events and six automatic cues with the production runtime.
+- Nine production executable integration checks passed on Windows 11. These covered startup and settings, Unicode dataset discovery, media probing, waveform and cache, real WebView2 playback and seek, v1 import and clip split, analysis preserving a manual cue, recovery, timed export, and unauthorized path rejection. Run `node scripts/native-qa.mjs` from a prepared development tree to repeat the checks.
 - The Windows 11 x64 installer smoke passed. It verified the installed runtimes, Start Menu shortcut, desktop startup, native settings IPC, uninstall, and preservation of a separate directory with a Unicode name.
 - The release workflow verifies the installer signature against the embedded key and matches the manifest's signature and download URL to the release artifacts. It publishes after the tests and installer smoke succeed.
 - The locally built Windows x64 NSIS package passed signature verification. The verifier rejected a copy modified by one byte.

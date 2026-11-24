@@ -79,4 +79,3 @@ try{
  assert.deepEqual(errors,[])
  console.log("Browser UI passed: import, waveform clips, playback, pause, SFX sync, split, undo, redo, save, reload, settings. Observed A/V clock difference:",delta.toFixed(3),"seconds. Native calls mocked.")
 } finally {await browser?.close();if(server)await new Promise(r=>server.close(r));await rm(temp,{recursive:true,force:true})}
-
