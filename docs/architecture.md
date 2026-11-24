@@ -4,7 +4,7 @@ FoleyMarks is an offline editor with three layers.
 
 - **React, TypeScript, Vite and Zustand** render the workspace and maintain the editable project, selection and undo history. Tailwind and shadcn/ui primitives provide the controls. Lucide provides the icons. The video element supplies the playback clock, and audio clips map that clock to source offsets.
 - **Tauri and Rust** own Windows dialogs, allowed file paths, dataset discovery, settings, persistence, recovery, waveform caching and media jobs. User directory selections and explicit file picks grant access. Imported metadata is data and cannot grant access to arbitrary files. Tauri capabilities expose the updater and process-restart methods to the main window.
-- **FFmpeg, FFprobe and a packaged Python worker** handle probing, waveforms, preview conversions, optical-flow analysis and rendering. The renderer and analysis carry forward the tested legacy models, metadata validation, timing and SFX matching. The worker handles bounded operations with JSON messages. The app can cancel media jobs.
+- **FFmpeg, FFprobe and a packaged Python worker** handle probing, waveforms, optical-flow analysis and rendering. The renderer and analysis carry forward the tested legacy models, metadata validation, timing and SFX matching. The worker handles bounded operations with JSON messages. The app can cancel media jobs. Interactive preview decodes through WebView2.
 
 Dataset metadata is the portable persistence format. Settings, picker grants and recovery are per-user JSON kept outside the install directory. Replacing files atomically keeps the last complete state across interrupted writes. A database would duplicate the project files and is unnecessary for the current settings and local index.
 

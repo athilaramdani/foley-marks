@@ -6,14 +6,25 @@ On 24 November 2026, the legacy Windows application passed its startup check and
 
 ## Verification matrix
 
-- TypeScript, ESLint and Vitest exercise the frontend, followed by a Vite production build.
-- Rust formatting, Clippy and unit tests validate native data and path handling.
-- Python media tests use generated media for probe/waveform, edits, automatic annotation, and rendering.
-- The Windows installer smoke checks startup, native IPC, uninstall, and a separate directory with a Unicode preservation marker.
+- TypeScript, ESLint and Vite production build passed. All 13 frontend regression tests passed.
+- Edge browser integration with mocked Tauri IPC passed import, playback, synchronized clip playback, split, undo/redo, save, reload and settings. One sampled playback offset was 28 ms.
+- Rust formatting, release-profile Clippy and all eight native unit tests passed.
+- The embedded Python runtime passed all six media tests with the production FFmpeg build. The render test checks both sides of a trimmed cue against the expected times within 25 ms.
+- The Windows 11 x64 installer smoke passed. It verified the installed runtimes, Start Menu shortcut, desktop startup, native settings IPC, uninstall, and preservation of a separate directory with a Unicode name.
 - The release workflow verifies the installer signature against the embedded key and matches the manifest's signature and download URL to the release artifacts. It publishes after the tests and installer smoke succeed.
+- The locally built Windows x64 NSIS package passed signature verification. The verifier rejected a copy modified by one byte.
+- A local update rehearsal upgraded a private 0.9.0 test build to 1.0.0, rejected a downgrade and a damaged payload, restarted automatically, and preserved settings. The harness also checked the external preservation marker through installation and uninstall. It did not publish the test build.
 
 ## Manual coverage
 
 Use a Windows 10 x64 machine and a Windows 11 x64 machine to review WebView2 bootstrap when the runtime is missing, high-DPI behavior, native file dialogs, keyboard and pointer interaction, and audio timing on physical speakers. For a future update, test in-place replacement, retry after a network failure, artifact tamper rejection, media preservation and restored editing state under a staging endpoint. Measure long projects, high bitrate and variable-frame-rate assets with representative synthetic media.
 
 Refer to the release job logs for the build-specific CI and installer result. A successful smoke test establishes the exercised path for that runner and profile.
+
+## Migration fixes and limits
+
+- A trimmed SFX uses its source offset during mixing. Video edits move linked cues using the legacy segment mapping. The export is staged before publication to avoid leaving a partial dataset on failure.
+- Matching legacy references and Unicode Windows paths are handled locally. User-selected folder grants govern file access, including when a project contains stale paths.
+- Legacy event analysis uses optical flow. Test coverage here does not include an external pose model. The current workspace exposes a subset of the legacy annotation and library metadata controls.
+- WebView2 codec support governs interactive preview. Frame-step uses the probed frame rate. Verify exact frame navigation on variable-frame-rate video.
+- The workspace language setting translates the principal workspace labels. Some dialogs and editor controls still use English. Hardware acceleration follows the WebView2 runtime. The FFmpeg export uses software encoding.

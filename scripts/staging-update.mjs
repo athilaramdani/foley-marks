@@ -62,8 +62,9 @@ try{
   await status.filter({hasText:/signature|validation|verification/i}).waitFor({timeout:120000});
   assert.equal(downloads,1);
   served=payload;
+  const closed = old.page.waitForEvent("close", { timeout: 120000 });
   await install.click();
-  await Promise.race([old.page.waitForEvent("close",{timeout:120000}),browser.waitForEvent("disconnected",{timeout:120000})]);
+  await closed;
   const updated=await connect();browser=updated.browser;
   const after=await getState(updated.page);
   assert.equal(after.version,config.version);
