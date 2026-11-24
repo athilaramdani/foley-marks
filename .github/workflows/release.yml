@@ -74,7 +74,7 @@ jobs:
           updaterJsonPreferNsis: true
           uploadPlainBinary: false
           args: --target x86_64-pc-windows-msvc --ci -- --locked
-      - name: Verify the signed installer and check install/uninstall
+      - name: Verify the signed installer and check the installed package
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -84,7 +84,7 @@ jobs:
           node scripts/release-assets.mjs artifacts
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $installer = Join-Path artifacts ("FoleyMarks_" + $env:GITHUB_REF_NAME.Substring(1) + "_x64-setup.exe")
-          pwsh -NoProfile -File scripts/installer-smoke.ps1 -Installer $installer
+          pwsh -NoProfile -File scripts/installer-smoke.ps1 -Installer $installer -PackageOnly
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Publish the verified release
         env:

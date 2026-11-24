@@ -1,10 +1,12 @@
 param(
   [Parameter(Mandatory)][string]$Installer,
-  [string]$StagingBaseline
+  [string]$StagingBaseline,
+  [switch]$PackageOnly
 )
 $ErrorActionPreference='Stop'
 $Installer=(Resolve-Path $Installer).Path
 if($StagingBaseline){$StagingBaseline=(Resolve-Path $StagingBaseline).Path}
+if($StagingBaseline -and $PackageOnly){throw 'The staging updater test requires a desktop session.'}
 $testDir=Join-Path ([IO.Path]::GetTempPath()) ('FoleyMarksQA-'+[guid]::NewGuid())
 $installDir=Join-Path $testDir 'Installed App'
 $mediaPath=Join-Path $testDir 'Données 媒体'
@@ -23,13 +25,22 @@ try {
   }
   $programs=[Environment]::GetFolderPath('Programs')
   if(!(Test-Path -LiteralPath (Join-Path $programs 'FoleyMarks/FoleyMarks.lnk'))){throw 'Start Menu shortcut missing'}
-  $env:WEBVIEW2_USER_DATA_FOLDER=Join-Path $testDir 'webview'
-  $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS='--remote-debugging-address=127.0.0.1 --remote-debugging-port=19471'
-  if($StagingBaseline){Copy-Item -LiteralPath $StagingBaseline -Destination $exe -Force}
-  $app=Start-Process -FilePath $exe -PassThru -WindowStyle Hidden
-  if($StagingBaseline){node scripts/staging-update.mjs $Installer}
-  else{node scripts/desktop-smoke.mjs}
-  if($LASTEXITCODE){throw 'Installed desktop smoke failed'}
+  if($PackageOnly){
+    foreach($tool in @('ffmpeg.exe','ffprobe.exe')){
+      & (Join-Path $installDir $tool) -version | Out-Null
+      if($LASTEXITCODE){throw "Installed runtime failed to start $tool"}
+    }
+    & (Join-Path $installDir 'media-runtime/python.exe') -I -B -c 'import cv2, numpy, PIL'
+    if($LASTEXITCODE){throw 'Installed Python media dependencies failed to import'}
+  } else {
+    $env:WEBVIEW2_USER_DATA_FOLDER=Join-Path $testDir 'webview'
+    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS='--remote-debugging-address=127.0.0.1 --remote-debugging-port=19471'
+    if($StagingBaseline){Copy-Item -LiteralPath $StagingBaseline -Destination $exe -Force}
+    $null=Start-Process -FilePath $exe -PassThru -WindowStyle Hidden
+    if($StagingBaseline){node scripts/staging-update.mjs $Installer}
+    else{node scripts/desktop-smoke.mjs}
+    if($LASTEXITCODE){throw 'Installed desktop smoke failed'}
+  }
 } finally {
   if($exe){
     Get-Process -Name 'foleymarks' -ErrorAction SilentlyContinue | Where-Object Path -eq $exe | ForEach-Object {
@@ -43,4 +54,5 @@ try {
 if($exe -and (Test-Path -LiteralPath $exe)){throw 'Uninstall left the application executable'}
 foreach($reg in $registryPaths){if(Test-Path $reg){throw 'Uninstall left its registry entry'}}
 if((Get-Content (Join-Path $mediaPath 'preserve.txt')) -ne 'FoleyMarks QA preservation marker'){throw 'External data preservation failed'}
-Write-Host 'Verified install, WebView startup, native IPC, uninstall and preservation of external sentinel.'
+if($PackageOnly){Write-Host 'Verified install, bundled media runtimes, uninstall and preservation of external sentinel.'}
+else{Write-Host 'Verified install, WebView startup, native IPC, uninstall and preservation of external sentinel.'}

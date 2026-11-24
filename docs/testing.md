@@ -16,6 +16,7 @@ On 24 November 2026, the legacy Windows application passed its startup check and
 - The release workflow verifies the installer signature against the embedded key and matches the manifest's signature and download URL to the release artifacts. It publishes after the tests and installer smoke succeed.
 - The locally built Windows x64 NSIS package passed signature verification. The verifier rejected a copy modified by one byte.
 - A local update rehearsal upgraded a private 0.9.0 test build to 1.0.0, rejected a downgrade and a damaged payload, restarted automatically, and preserved settings. The harness also checked the external preservation marker through installation and uninstall. It did not publish the test build.
+- The v1.0.0 Actions job passed tag validation, source codec build, packaging, and installer signature verification. WebView2's QA endpoint did not start on the hosted runner. The exact signed draft installer then passed the full desktop, package lifecycle, and staging update checks on Windows 11 before promotion. Future hosted release jobs verify the installed package and runtimes. The full desktop smoke remains a local release check.
 
 ## Manual coverage
 
