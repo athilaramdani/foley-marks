@@ -1,0 +1,78 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "FoleyMarks",
+  "version": "1.0.0",
+  "identifier": "com.athilaramdani.foleymarks",
+  "build": {
+    "beforeDevCommand": "node node_modules/vite/bin/vite.js --host localhost",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "node scripts/build-frontend.mjs",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "FoleyMarks",
+        "width": 1392,
+        "height": 880,
+        "minWidth": 840,
+        "minHeight": 580,
+        "resizable": true,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      },
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost asset: http://asset.localhost https://asset.localhost; img-src 'self' data: blob: asset: http://asset.localhost https://asset.localhost; media-src 'self' blob: asset: http://asset.localhost https://asset.localhost; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "Athila Ramdani",
+    "category": "Video",
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "createUpdaterArtifacts": true,
+    "externalBin": [
+      "binaries/ffmpeg",
+      "binaries/ffprobe"
+    ],
+    "resources": {
+      "resources/media-runtime/": "media-runtime/",
+      "resources/media-licenses/": "media-licenses/",
+      "resources/notices/": "notices/"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "startMenuFolder": "FoleyMarks",
+        "compression": "lzma"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/athilaramdani/foley-marks/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IENGODMyNDcwOEJFRTNGNUQKUldSZFArNkxjQ1NEejJTcHN3OGM5b1ZrN2FDWHFyMjRqY01VdkdQbTRzWUNLMEtoLzNLRStQT2QK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

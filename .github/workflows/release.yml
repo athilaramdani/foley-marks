@@ -1,0 +1,95 @@
+name: Windows release
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+permissions:
+  contents: read
+concurrency:
+  group: foleymarks-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+  codecs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64-posix nasm make pkg-config zip
+      - run: bash media/build-codecs.sh "$PWD/codec-dist"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-codecs
+          path: codec-dist/
+          if-no-files-found: error
+          retention-days: 7
+  release:
+    needs: [validate, codecs]
+    runs-on: windows-2025
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: release-codecs
+          path: codec-dist
+      - run: npm ci
+      - run: npm run versioning -- check "$env:GITHUB_REF_NAME"
+      - run: rustup update stable --no-self-update
+      - run: pwsh -NoProfile -File media/prepare.ps1 -CodecDir "$PWD/codec-dist"
+      - run: src-tauri/resources/media-runtime/python.exe -B -m unittest discover -s media/tests -v
+      - run: node scripts/notices.mjs
+      - name: Require signing material
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if (!$env:TAURI_SIGNING_PRIVATE_KEY -or !$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) { throw 'Configure the updater signing secrets.' }
+          $existing = gh release view $env:GITHUB_REF_NAME --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0 -and !($existing | ConvertFrom-Json).isDraft) { throw 'Release is already public.' }
+          exit 0
+      - name: Build, sign and stage the Windows release
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: FoleyMarks ${{ github.ref_name }}
+          releaseDraft: true
+          generateReleaseNotes: true
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
+          uploadPlainBinary: false
+          args: --target x86_64-pc-windows-msvc --ci -- --locked
+      - name: Verify the signed installer and check install/uninstall
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download $env:GITHUB_REF_NAME --pattern '*setup.exe*' --pattern latest.json --dir artifacts
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Copy-Item codec-dist/media-sources.zip artifacts/media-sources.zip
+          node scripts/release-assets.mjs artifacts
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $installer = Join-Path artifacts ("FoleyMarks_" + $env:GITHUB_REF_NAME.Substring(1) + "_x64-setup.exe")
+          pwsh -NoProfile -File scripts/installer-smoke.ps1 -Installer $installer
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Publish the verified release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload $env:GITHUB_REF_NAME artifacts/latest.json artifacts/SHA256SUMS.txt artifacts/media-sources.zip --clobber
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          gh release edit $env:GITHUB_REF_NAME --draft=false --latest

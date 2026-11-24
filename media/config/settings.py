@@ -1,0 +1,5 @@
+# Editor application settings
+AUTOSAVE_ENABLED = True
+SNAPPING_ENABLED = True
+DEFAULT_FPS = 25.0
+VOLUME_STEP = 0.1
